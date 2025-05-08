@@ -22,6 +22,7 @@ Xe amr là một hệ thống Cơ điện tử gồm:
 import turtle
 from random import *
 import serial
+import serial.tools.list_ports
 import time
 
 
@@ -38,6 +39,7 @@ def map_init(node_row, node_column):
                     new_node = 0
                 new_row.append(new_node)
             map.append(new_row)
+
     send_command("map= "+str(node_row)+"x"+str(node_column))
     return map
 #Hàm in bản đồ ra terminal (text)
@@ -159,7 +161,44 @@ def run(amr, mmap, width_half, height_half):
 #btl bắt đầu từ đây
 SERIAL_PORT = 'COM4'      
 BAUDRATE = 115200
+portDetected = False
 def send_command(command):
+   
+    global portDetected
+    global SERIAL_PORT
+
+    while not portDetected: 
+        turtle.Turtle()
+        turtle.hideturtle()
+        turtle.color('white')
+        turtle.seth(-90)
+        turtle.up()
+        turtle.goto(0,0)
+        turtle.down()
+        madeMyPoint = True
+        print("looking for com ports ")
+        ports = serial.tools.list_ports.comports()
+
+        if not ports:
+            #trương hợp mà ko tìm đc com portport
+            if madeMyPoint:
+                turtle.write("Thầy thử chỉnh COM port đi ạạ",align='center',font=('Arial', 20, 'normal'))
+                turtle.goto(0,-100)
+                turtle.write("Phần mềm đang ko tìm được ESP32 của thầy",align='center',font=('Arial', 20, 'normal'))
+
+                madeMyPoint = False
+                #turtle.exitonclick() 
+        else: 
+            for port in ports:
+                print(f"Found Device: {port.device}, Description: {port.description}")
+                turtle.clear()
+                if "CP210" in port.description or "CH34" in port.description or "PL2303HX" in port.description :
+                    SERIAL_PORT = port.device
+                    print(f"Chosen: {SERIAL_PORT}")
+                    portDetected = True
+            time.sleep(1)
+        
+    
     with serial.Serial(SERIAL_PORT, BAUDRATE, timeout=1) as ser:
         # Send command followed by newline
         ser.write((command + '\n').encode())
@@ -176,7 +215,7 @@ if __name__ == '__main__':
     turtle.setup(0.5, 0.5, 100, 100)
     turtle.Screen().bgcolor('black')
     window = turtle.Screen()
-    mmap = map_init(6, 6)
+    mmap = map_init(5, 7)
     map_random(mmap)
     current_mpos = [3, 2]
     one_amr = turtle.Turtle('turtle')
