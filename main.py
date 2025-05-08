@@ -31,14 +31,17 @@ color = {
     'black': 	rgb_to_565((0, 0, 0)),
     }
 
-def draw_turt(x_coords,y_coords):
+def draw_turt(x_coords,y_coords,isBig = True):
     global start_x
     global start_y
     global row_dist
     global col_dist
     map_coords = [x_coords*row_dist + start_y, y_coords*col_dist + start_x]
     
-    display.draw_image('images/tutel.raw', map_coords[1]-4, map_coords[0]-4 , 9, 9)
+    if isBig:
+        display.draw_image('tutel3.raw', map_coords[1]-10, map_coords[0]-10 , 20, 20)
+    else:
+        display.draw_image('images/tutel.raw', map_coords[1]-4, map_coords[0]-4 , 9, 9)
 
 def draw_dot(x_coords, y_coords,r = 3,color = color['yellow']):
     global start_x
@@ -50,20 +53,28 @@ def draw_dot(x_coords, y_coords,r = 3,color = color['yellow']):
     display.fill_circle(map_coords[1], map_coords[0], r, color)
     return
 
-def draw_overlay(x_coords,y_coords):
+def draw_overlay(x_coords,y_coords, isBig = False):
     global start_x
     global start_y
     global row_dist
     global col_dist
     map_coords = [x_coords*row_dist + start_y, y_coords*col_dist + start_x]
     
-    display.fill_rectangle(map_coords[1]-4 ,map_coords[0]-4 ,9 ,9 ,color['black'])
-    display.draw_line(map_coords[1]-9, map_coords[0],
-                      map_coords[1]+9, map_coords[0], color['cyan'])
     
-    display.draw_line(map_coords[1], map_coords[0]-9,
-                      map_coords[1], map_coords[0]+9, color['cyan'])
-    
+    if isBig:
+        display.fill_rectangle(map_coords[1]-10 ,map_coords[0]-10 ,20 ,20 ,color['black'])
+        display.draw_line(map_coords[1]-20, map_coords[0],
+                          map_coords[1]+20, map_coords[0], color['cyan'])
+        
+        display.draw_line(map_coords[1], map_coords[0]-20,
+                          map_coords[1], map_coords[0]+20, color['cyan'])
+    else:
+        display.fill_rectangle(map_coords[1]-4 ,map_coords[0]-4 ,9 ,9 ,color['black'])
+        display.draw_line(map_coords[1]-9, map_coords[0],
+                          map_coords[1]+9, map_coords[0], color['cyan'])
+        
+        display.draw_line(map_coords[1], map_coords[0]-9,
+                          map_coords[1], map_coords[0]+9, color['cyan'])
 
 def draw_map_layout(row,col):
 
@@ -98,6 +109,7 @@ def handle_command(command):
     """
     global current_coords
     global old_coords
+    global isBig
     if not command:
         return
 
@@ -117,9 +129,9 @@ def handle_command(command):
         display.draw_text(160, 230, y, font, color['blue'], color['black'])
         current_coords[1] = int(y)
         
-        draw_overlay(old_coords[0],old_coords[1])
-        draw_turt(current_coords[0],current_coords[1])
-        draw_overlay(old_coords[0],old_coords[1])
+        draw_overlay(old_coords[0],old_coords[1],isBig)
+        draw_turt(current_coords[0],current_coords[1], isBig)
+        draw_overlay(old_coords[0],old_coords[1],isBig)
         old_coords = current_coords[:]
 
     elif "dir= " in command:
@@ -138,6 +150,10 @@ def handle_command(command):
     elif "map= " in command:
         row = int( ( command[5:].split('x') )[0] )
         col = int( ( command[5:].split('x') )[1] )
+        if row <= 7 and col <= 7:
+            isBig = True
+        else:
+            isBig = False
         draw_map_layout(row,col)
     elif "obs= " in command:
         x_coords = int( ( command[4:].split('x') )[0] )
@@ -168,6 +184,7 @@ def readSerial():
 serialPoll = uselect.poll()
 serialPoll.register(sys.stdin, uselect.POLLIN)
 
+isBig = False
 buffer = ""
 current_coords = [0,0]
 old_coords = [0,0]
@@ -182,13 +199,11 @@ try:
     display.clear(color['black'])
     font = XglcdFont('fonts/wendy7x8.c', 7, 8)
     display.draw_text(0, 0, 'ESP32 turtle robot amr thinggy for advanced programming', font, color['yellow'], color['black'])
-    #draw_turt(200,10)
     
     display.draw_text(50, 230, 'x: ', font, color['red'], color['black'])
     #display.fill_rectangle(60,230,10,8,color['red'])
     display.draw_text(150, 230, 'y: ' , font, color['blue'], color['black'])
     #display.fill_rectangle(160,230,10,8,color['blue'])
-
     display.draw_text(240, 230, 'direction: ', font, color['green'], color['black'])
 
 #     draw_map_layout(10,10)
@@ -196,7 +211,6 @@ try:
 #     draw_turt(1,1)
 #     draw_overlay(1,1)
 #     draw_turt(1,3)
-    
     
     while True:
         message = readSerial()
@@ -208,3 +222,4 @@ except Exception as e:
 except KeyboardInterrupt:
     print('Program Interrupted by the user')        
     display.cleanup()
+
